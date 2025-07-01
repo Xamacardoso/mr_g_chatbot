@@ -46,6 +46,9 @@ class _ChatScreenState extends State<ChatScreen> {
 	late final ChatSession _chat;
 	bool isLoading = false;
 
+	// Imagem selecionada para preview
+	Uint8List? _imageBytesPreview;
+
 	// Chave api
 	static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
 
@@ -76,22 +79,25 @@ class _ChatScreenState extends State<ChatScreen> {
 	}
 
 	// Lidar com envio de mensagens no chat
-	Future<void> _handleSubmitted(String text, {Uint8List? imageBytes}) async {
-		if (text.isEmpty && imageBytes == null) {
+	Future<void> _handleSubmitted(String text)async {
+		if (text.isEmpty && _imageBytesPreview == null) {
 			return;
 		}
+
+		final imageBytesToSend = _imageBytesPreview;
 
 		// Limpa o campo de mensagem
 		_messageController.clear();
 		setState(() {
 			isLoading = true;
-			_messages.insert(0, ChatMessage(text: text, isUser: true, imageBytes: imageBytes));
+			_messages.insert(0, ChatMessage(text: text, isUser: true, imageBytes: imageBytesToSend));
+			_imageBytesPreview = null;
 		});
 
 		try {
 			// Prepara o conteudo da mensagem
 			final content = [
-				if (imageBytes != null) DataPart("image/jpeg", imageBytes),
+				if (imageBytesToSend != null) DataPart("image/jpeg", imageBytesToSend),
 				if (text.isNotEmpty) TextPart(text),
 			];
 
@@ -143,7 +149,9 @@ class _ChatScreenState extends State<ChatScreen> {
 		if (image != null) {
 			final imageBytes = await image.readAsBytes();
 			// Envia a imagem com o texto que estiver no campo
-			_handleSubmitted(_messageController.text, imageBytes: imageBytes);
+			setState(() {
+				_imageBytesPreview = imageBytes;
+			});
 		}
   }
 
@@ -173,6 +181,10 @@ class _ChatScreenState extends State<ChatScreen> {
 						),
 					),
 					const Divider(height: 1.0),
+
+					// Previa da imagem
+					_buildImagePreview(),
+
 					// Area onde o usuário digita a mensagem
 					_buildTextComposer(),
 				],
@@ -211,6 +223,92 @@ class _ChatScreenState extends State<ChatScreen> {
 						),
 					],
 				),
+			),
+		);
+	}
+
+	// Cria a previa da imagem
+	Widget _buildImagePreview() {
+		if (_imageBytesPreview == null) {
+			return const SizedBox.shrink();
+		}
+
+		return Container(
+			padding: const EdgeInsets.all(8.0),
+			margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+			decoration: BoxDecoration(
+				color: Colors.grey.shade200,
+				borderRadius: BorderRadius.circular(12.0),
+			),
+			child: Row(
+				crossAxisAlignment: CrossAxisAlignment.start,
+				children: [
+					Column(
+					children: [
+						const SizedBox(width: 10.0),
+						// Texto da imagem selecionada
+						Text(
+							'Imagem selecionada',
+							style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.black54),
+							overflow: TextOverflow.ellipsis,
+							maxLines: 1,
+							softWrap: false,
+							textAlign: TextAlign.center,
+						),
+						const SizedBox(height: 10.0),
+						// Imagem selecionada com botão de remover
+						Stack(
+							clipBehavior: Clip.none, // Permite que elementos ultrapassem as bordas
+							children: [
+								ClipRRect(
+									borderRadius: BorderRadius.circular(12.0),
+									child: Image.memory(
+										_imageBytesPreview!,
+										width: 80.0,
+										height: 80.0,
+										fit: BoxFit.cover,
+									),
+								),
+								// Botão para remover a imagem no canto superior direito
+								Positioned(
+									top: -10.0,
+									right: -10.0,
+									child: Container(
+										decoration: BoxDecoration(
+											color: Colors.red,
+											shape: BoxShape.circle,
+											boxShadow: [
+												BoxShadow(
+													color: Colors.black.withOpacity(0.3),
+													blurRadius: 4.0,
+													offset: const Offset(0, 2),
+												),
+											],
+										),
+										child: IconButton(
+											icon: const Icon(
+												Icons.close,
+												color: Colors.white,
+												size: 18.0,
+											),
+											padding: EdgeInsets.zero,
+											constraints: const BoxConstraints(
+												minWidth: 28.0,
+												minHeight: 28.0,
+											),
+											onPressed: () {
+												setState(() {
+													_imageBytesPreview = null;
+												});
+											},
+										),
+									),
+								),
+							],
+						),
+						],
+					),
+				],
 			),
 		);
 	}
