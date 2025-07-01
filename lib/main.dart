@@ -60,7 +60,7 @@ class _ChatScreenState extends State<ChatScreen> {
 			"Você é o Mr. G, um assistente virtual de conhecimento vasto e modos impecáveis. "
 			"Suas respostas devem ser sempre EXTREMAMENTE FORMAIS E ERUDITAS. "
 			"Utilize um vocabulário rico e estruturas frasais complexas"
-			"Tente ter respostas de tamanho moderado, mas não muito curtas"
+			"Tente ter respostas de tamanho moderado, mas não muito curtas e nem muito longas"
 			"De maneira esporádica e sutil, inclua uma pequena anedota ou um gracejo intelectual ao final de suas respostas, mantendo sempre a compostura."
 			"Exemplo de gracejo: '...como diria um elétron entediado, é hora de realizar um salto quântico para o próximo tópico.' "
 			"Nunca use gírias ou linguagem casual, somente em gracejos."
@@ -85,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
 		_messageController.clear();
 		setState(() {
 			isLoading = true;
-			_messages.insert(0, ChatMessage(text: text, isUser: true));
+			_messages.insert(0, ChatMessage(text: text, isUser: true, imageBytes: imageBytes));
 		});
 
 		try {
@@ -152,8 +152,14 @@ class _ChatScreenState extends State<ChatScreen> {
 	Widget build(BuildContext context) {
 		return Scaffold(
 			appBar: AppBar(
-				title: const Text('Mr. G, O assistente erudito'),
+				title: const Text('Mr. G, O Assistente Erudito'),
 				backgroundColor: Colors.deepPurple.shade100,
+				centerTitle: true,
+				titleTextStyle: const TextStyle(
+					fontSize: 20.0,
+					fontWeight: FontWeight.bold,
+					color: Color.fromARGB(255, 0, 0, 0),
+				),
 			),
 			body: Column(
 				children: <Widget>[
@@ -243,23 +249,46 @@ class ChatMessage extends StatelessWidget {
 
 					// Conteudo da mensagem
 					Flexible(
-						child: Container(
-							padding: const EdgeInsets.all(12.0),
-							decoration: BoxDecoration(
-								color: isUser ? Colors.deepPurple.shade100 : Colors.grey.shade200,
-								borderRadius: BorderRadius.circular(8.0),
+						child: ConstrainedBox(
+							constraints: BoxConstraints(
+								maxWidth: isUser 
+									? MediaQuery.of(context).size.width * 0.7  // 70% da tela para usuário
+									: MediaQuery.of(context).size.width * 0.7, // 70% da tela para Mr. G
 							),
-							child: Column(
-								crossAxisAlignment: CrossAxisAlignment.start,
-								children: [
-									if (imageBytes != null)
-										Image.memory(imageBytes!, width: 200.0),
-									if (imageBytes == null && text.isNotEmpty)
-										const SizedBox(height: 8.0),
-									if (imageBytes == null && text.isNotEmpty)
-										Text(text, style: const TextStyle(fontSize: 16.0)),
-								]
-							)
+							child: Container(
+								padding: const EdgeInsets.all(12.0),
+								decoration: BoxDecoration(
+									color: isUser ? Colors.deepPurple.shade100 : Colors.grey.shade200,
+									borderRadius: BorderRadius.circular(8.0),
+								),
+								child: Column(
+									crossAxisAlignment: CrossAxisAlignment.start,
+									children: [
+										if (imageBytes != null)
+											Image.memory(
+												imageBytes!,
+												width: 200.0,
+												height: 200.0,
+												fit: BoxFit.cover,
+												errorBuilder: (context, error, stackTrace) {
+													return Container(
+														width: 200.0,
+														height: 200.0,
+														color: Colors.grey.shade300,
+														child: const Icon(
+															Icons.error,
+															color: Colors.grey,
+														),
+													);
+												},
+											),
+										if (imageBytes != null && text.isNotEmpty)
+											const SizedBox(height: 8.0),
+										if (text.isNotEmpty)
+											Text(text, style: const TextStyle(fontSize: 16.0)),
+									]
+								),
+							),
 						),
 					),
 
