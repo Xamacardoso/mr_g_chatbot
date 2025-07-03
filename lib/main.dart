@@ -271,7 +271,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   'Imagem selecionada para análise',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
                 ),
-                const SizedBox(height: 8.0),
+                const SizedBox(height: 16.0),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12.0),
                   child: Image.memory(
